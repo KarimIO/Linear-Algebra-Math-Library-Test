@@ -4,6 +4,7 @@
 #include "matrix.hpp"
 #include "vector.hpp"
 
+Matrix transpose(const Matrix &m);
 Matrix perspective(float near, float far, float fovX, float fovY);
 Matrix orthographic(float near, float far, float width, float height);
 Matrix view(Vector3 position, Vector3 forward, Vector3 up);
@@ -14,5 +15,6 @@ Matrix scale(Vector3 a);
 float toRadians(float degrees);
 Vector3 normalize(Vector3);
 Vector3 cross(Vector3 a, Vector3 b);
+float dot(Vector3 a, Vector3 b);
 
 #endif

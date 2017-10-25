@@ -1,10 +1,11 @@
 #include "matrix.hpp"
+#include <iostream>
 
-Matrix::Matrix() : mat_ {
-    {1.0f, 0.0f, 0.0f, 0.0f},
-    {0.0f, 1.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 1.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f, 1.0f}
+Matrix::Matrix(float i) : mat_ {
+    {i, 0.0f, 0.0f, 0.0f},
+    {0.0f, i, 0.0f, 0.0f},
+    {0.0f, 0.0f, i, 0.0f},
+    {0.0f, 0.0f, 0.0f, i}
 } {
 
 }
@@ -33,19 +34,54 @@ Matrix::Matrix( float a11, float a12, float a13, float a14,
 
 }
 
-Matrix Matrix::operator+(const Matrix &r) {
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            mat_[i][j] = mat_[i][j] + r.mat_[i][j];
-}
-
-Matrix Matrix::operator*(const Matrix &r) {
+Matrix Matrix::operator+(const Matrix &r) const {
+    Matrix out;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            mat_[i][j] = mat_[i][0] * r.mat_[0][j];
-            for (int k = 1; k < 4; k++) {
-                mat_[i][j] += mat_[i][k] * r.mat_[k][j];
+            out[i][j] = mat_[i][j] + r.mat_[i][j];
+        }
+    }
+
+    return out;
+}
+
+Matrix Matrix::operator-(const Matrix &r) const {
+    Matrix out;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            out[i][j] = mat_[i][j] - r.mat_[i][j];
+        }
+    }
+
+    return out;
+}
+
+Matrix Matrix::operator*(const Matrix &r) const {
+    Matrix out;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            out[i][j] = mat_[i][0] * r.mat_[0][j];
+            for (int k = 1; k < 4; ++k) {
+                out[i][j] += mat_[i][k] * r.mat_[k][j];
             }
         }
     }
+    return out;
+}
+
+void Matrix::print() const {
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            std::cout << mat_[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
+}
+
+float* Matrix::operator[](long unsigned int p) {
+    return mat_[p];
+}
+
+const float* Matrix::operator[](long unsigned int p) const {
+    return mat_[p];
 }

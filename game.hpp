@@ -12,6 +12,7 @@ public:
 	void Run();
 	~Game();
 private:
+	void Update(double time);
 	void Draw();
 
 	Camera camera;
@@ -22,7 +23,7 @@ private:
 	GLuint vertexbuffer;
 	GLuint programID;
 
-	GLuint wvpUniform;
+	GLuint vpUniform;
 	GLuint worldUniform;
 };
 

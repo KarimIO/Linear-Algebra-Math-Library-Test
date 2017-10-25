@@ -6,10 +6,13 @@
 
 class Camera {
 public:
-    Matrix getWVP();
-    Matrix getWorld();
+    Camera();
+    Matrix getVP();
+    Vector3 GetForward();
+    void Move(Vector3 offset, double mx, double my);
 private:
     Vector3 position;
+    Vector3 angles;
 };
 
 #endif

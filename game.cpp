@@ -99,8 +99,6 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 	return ProgramID;
 }
 
-
-
 Game::Game() {
 	if( !glfwInit() ) {
 		THROW_ERROR("Could not load GLFW\n");
@@ -112,10 +110,10 @@ Game::Game() {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // For Mac
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // No old OGL
 
-	window = glfwCreateWindow( 1024, 768, "Tutorial 01", NULL, NULL);
+	window = glfwCreateWindow( 1024, 768, "Linear Algebra", NULL, NULL);
 	if( window == NULL ){
 	    glfwTerminate();
-		THROW_ERROR("Could not create wndow\n");
+		THROW_ERROR("Could not create window\n");
 	}
 	glfwMakeContextCurrent(window);
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -125,6 +123,8 @@ Game::Game() {
 
 	if (!gl3wIsSupported(3, 3))
 		THROW_ERROR("OpenGL 3.3 not supported\n");
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	printf("OpenGL %s, GLSL %s\n", glGetString(GL_VERSION),
 			glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -140,11 +140,11 @@ Game::Game() {
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
-	glClearColor(0.33, 0.66, 0.99, 1.0);
+	glClearColor(33.0f/255.0f, 66.0f/255.0f, 99.0f/255.0f, 1.0);
 	
 	programID = LoadShaders( "shaders/main_vert.glsl", "shaders/main_frag.glsl" );
 	
-	wvpUniform = glGetUniformLocation(programID, "pvw");
+	vpUniform = glGetUniformLocation(programID, "pvw");
 	worldUniform = glGetUniformLocation(programID, "world");
 	
 	std::cout << "Game successfully Initialized!" << std::endl;
@@ -153,8 +153,11 @@ Game::Game() {
 void Game::Draw() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(programID);
-	glUniformMatrix4fv(wvpUniform, 1, false, camera.getWVP().getMatrix());
-	glUniformMatrix4fv(worldUniform, 1, false, camera.getWorld().getMatrix());
+
+	// SetMatrix: TargetLocation, Count, IsRowMajor, Source
+	Matrix world(1.0f);
+	glUniformMatrix4fv(vpUniform, 1, true, camera.getVP().getMatrix());
+	glUniformMatrix4fv(worldUniform, 1, true, world.getMatrix());
 
 	// Draw
 	glEnableVertexAttribArray(0);
@@ -174,9 +177,33 @@ void Game::Draw() {
 	// Swap buffers
 	glfwSwapBuffers(window);
 }
+
+void Game::Update(double time) {
+	// Get Movement offset = (key1-key2)*delta_time
+	double x = ((glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) - (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)) * time;
+	double y = ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) - (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)) * time;
+	double z = ((glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) - (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)) * time;
+	
+	const double hx = 1024.0f/2.0f;
+	const double hy =  768.0f/2.0f;
+
+	double mx, my;
+	glfwGetCursorPos(window, &mx, &my);
+	mx = (mx-hx)*time;
+	my = (my-hy)*time;
+	glfwSetCursorPos(window, hx, hy);
+
+	// Move the camera
+	camera.Move(Vector3(x, y, z), mx, my);
+}
 	
 void Game::Run() {
+	double start_time = glfwGetTime(), end_time;
 	do {
+		end_time = glfwGetTime();
+		Update(end_time-start_time);
+		start_time = end_time;
+
 		Draw();
 
 		glfwPollEvents();
