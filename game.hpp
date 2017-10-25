@@ -14,17 +14,26 @@ public:
 private:
 	void Update(double time);
 	void Draw();
+	void PostStage();
 
 	Camera camera;
 	
 	GLFWwindow* window;
 	
-	GLuint VertexArrayID;
-	GLuint vertexbuffer;
-	GLuint programID;
+	GLuint fbo_;
+	GLuint depth_texture_;
+
+	GLuint trivao;
+	GLuint quadvao;
+	GLuint trivbo;
+	GLuint quadvbo;
+
+	GLuint mainProgram;
+	GLuint postProgram;
 
 	GLuint vpUniform;
 	GLuint worldUniform;
+	GLuint depth_uniform_;
 };
 
 #endif

@@ -99,6 +99,51 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 	return ProgramID;
 }
 
+void APIENTRY glDebugOutput(GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar *message,
+	void *userParam)
+{
+	// ignore non-significant error/warning codes
+	if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+
+	std::cout << "--------------- \nDebug message (" << id << "): " << message << "\n";
+
+	switch (source)
+	{
+		case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+		case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+		case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+		case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+		case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+	} std::cout << "\n";
+
+	switch (type)
+	{
+		case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break;
+		case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+		case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+		case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+		case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+		case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+		case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+	} std::cout << "\n";
+
+	switch (severity)
+	{
+		case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+		case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+		case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+		case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+	} std::cout << "\n\n";
+}
+
 Game::Game() {
 	if( !glfwInit() ) {
 		THROW_ERROR("Could not load GLFW\n");
@@ -109,7 +154,7 @@ Game::Game() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // For Mac
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // No old OGL
-
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 	window = glfwCreateWindow( 1024, 768, "Linear Algebra", NULL, NULL);
 	if( window == NULL ){
 	    glfwTerminate();
@@ -124,35 +169,88 @@ Game::Game() {
 	if (!gl3wIsSupported(3, 3))
 		THROW_ERROR("OpenGL 3.3 not supported\n");
 
+	GLint flags;
+	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback((GLDEBUGPROC)glDebugOutput, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	}
+	else {
+		printf("No debug\n");
+	}
+
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	printf("OpenGL %s, GLSL %s\n", glGetString(GL_VERSION),
 			glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-	glGenVertexArrays(1, &VertexArrayID);
-	glBindVertexArray(VertexArrayID);
-	const GLfloat g_vertex_buffer_data[] = {
+	glGenVertexArrays(1, &trivao);
+	glBindVertexArray(trivao);
+	
+	glGenVertexArrays(1, &quadvao);
+	glBindVertexArray(quadvao);
+
+	const GLfloat triangle[] = {
 		-1.0f, -1.0f, 0.0f,
 		0.0f,  1.0f, 0.0f,
 		1.0f, -1.0f, 0.0f,
-	 };
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+	};
+
+	const GLfloat quads[] = {
+		-1.0f, -1.0f,
+		-1.0f,  1.0f,
+		 1.0f, -1.0f,
+		 1.0f,  1.0f
+	};
+	
+	glGenBuffers(1, &trivbo);
+	glBindBuffer(GL_ARRAY_BUFFER, trivbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), triangle, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &quadvbo);
+	glBindBuffer(GL_ARRAY_BUFFER, quadvbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quads), quads, GL_STATIC_DRAW);
+		
+	glGenFramebuffers(1, &fbo_);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+
+	glGenTextures(1, &depth_texture_);
+	glBindTexture(GL_TEXTURE_2D, depth_texture_);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, 1024.0f, 768.0f, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_texture_, 0);
+
+	glDrawBuffer(GL_NONE);	
+
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		THROW_ERROR("Framebuffer Failed!");
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glClearColor(33.0f/255.0f, 66.0f/255.0f, 99.0f/255.0f, 1.0);
 	
-	programID = LoadShaders( "shaders/main_vert.glsl", "shaders/main_frag.glsl" );
+	mainProgram = LoadShaders( "shaders/main_vert.glsl", "shaders/main_frag.glsl" );
 	
-	vpUniform = glGetUniformLocation(programID, "perspectiveView");
-	worldUniform = glGetUniformLocation(programID, "world");
+	vpUniform = glGetUniformLocation(mainProgram, "perspectiveView");
+	worldUniform = glGetUniformLocation(mainProgram, "world");
 	
+	postProgram = LoadShaders( "shaders/post_vert.glsl", "shaders/post_frag.glsl" );
+	
+	depth_uniform_ = glGetUniformLocation(postProgram, "depth");
+
 	std::cout << "Game successfully Initialized!" << std::endl;
 }
 
 void Game::Draw() {
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(programID);
+	glUseProgram(mainProgram);
 
 	// SetMatrix: TargetLocation, Count, IsRowMajor, Source
 	Matrix world(1.0f);
@@ -161,7 +259,7 @@ void Game::Draw() {
 
 	// Draw
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, trivbo);
 	glVertexAttribPointer(
 	   0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
 	   3,                  // size
@@ -172,6 +270,31 @@ void Game::Draw() {
 	);
 	// Draw the triangle !
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDisableVertexAttribArray(0);
+}
+
+void Game::PostStage() {
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUseProgram(postProgram);
+
+	glUniform1i(depth_uniform_, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, depth_texture_);
+
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, quadvbo);
+	glVertexAttribPointer(
+	   0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+	   2,                  // size
+	   GL_FLOAT,           // type
+	   GL_FALSE,           // normalized?
+	   0,                  // stride
+	   (void*)0            // array buffer offset
+	);
+	// Draw the triangle !
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(0);
 
 	// Swap buffers
@@ -205,6 +328,7 @@ void Game::Run() {
 		start_time = end_time;
 
 		Draw();
+		PostStage();
 
 		glfwPollEvents();
 	}
