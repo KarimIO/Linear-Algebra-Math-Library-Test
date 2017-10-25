@@ -5,6 +5,7 @@
 #include "vector.hpp"
 
 Matrix transpose(const Matrix &m);
+Matrix inverse(const Matrix &m);
 Matrix perspective(float near, float far, float fovX, float fovY);
 Matrix orthographic(float near, float far, float width, float height);
 Matrix view(Vector3 position, Vector3 forward, Vector3 up);

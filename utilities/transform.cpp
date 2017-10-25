@@ -3,6 +3,11 @@
 #include <iostream>
 #include <stdio.h>
 
+Matrix inverse(const Matrix &m) {
+    // Insert Inverse Code Here
+    return Matrix(1.0f);
+}
+
 Matrix transpose(const Matrix &m) {
     return Matrix(
         m[0][0], m[1][0], m[2][0], m[3][0],

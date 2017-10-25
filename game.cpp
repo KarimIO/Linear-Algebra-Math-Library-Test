@@ -144,7 +144,7 @@ Game::Game() {
 	
 	programID = LoadShaders( "shaders/main_vert.glsl", "shaders/main_frag.glsl" );
 	
-	vpUniform = glGetUniformLocation(programID, "pvw");
+	vpUniform = glGetUniformLocation(programID, "perspectiveView");
 	worldUniform = glGetUniformLocation(programID, "world");
 	
 	std::cout << "Game successfully Initialized!" << std::endl;
@@ -181,7 +181,7 @@ void Game::Draw() {
 void Game::Update(double time) {
 	// Get Movement offset = (key1-key2)*delta_time
 	double x = ((glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) - (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)) * time;
-	double y = ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) - (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)) * time;
+	double y = ((glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) - (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)) * time;
 	double z = ((glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) - (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)) * time;
 	
 	const double hx = 1024.0f/2.0f;
