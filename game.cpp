@@ -169,7 +169,7 @@ Game::Game() {
 	if (!gl3wIsSupported(3, 3))
 		THROW_ERROR("OpenGL 3.3 not supported\n");
 
-	GLint flags;
+	/*GLint flags;
 	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
 	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
 		glEnable(GL_DEBUG_OUTPUT);
@@ -179,7 +179,7 @@ Game::Game() {
 	}
 	else {
 		printf("No debug\n");
-	}
+	}*/
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -216,6 +216,18 @@ Game::Game() {
 	glGenFramebuffers(1, &fbo_);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
 
+	glGenTextures(1, &texture_);
+	glBindTexture(GL_TEXTURE_2D, texture_);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 1024, 768, 0, GL_RGBA, GL_FLOAT, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_, 0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
 	glGenTextures(1, &depth_texture_);
 	glBindTexture(GL_TEXTURE_2D, depth_texture_);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, 1024.0f, 768.0f, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
@@ -225,7 +237,10 @@ Game::Game() {
 	
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_texture_, 0);
 
-	glDrawBuffer(GL_NONE);	
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	GLuint buffers[] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, buffers);	
 
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		THROW_ERROR("Framebuffer Failed!");
@@ -241,20 +256,27 @@ Game::Game() {
 	
 	postProgram = LoadShaders( "shaders/post_vert.glsl", "shaders/post_frag.glsl" );
 	
-	depth_uniform_ = glGetUniformLocation(postProgram, "depth");
+	depth_uniform_ = glGetUniformLocation(postProgram, "depthTex");
+	color_uniform_ = glGetUniformLocation(postProgram, "colorTex");
+	selector_uniform_ = glGetUniformLocation(postProgram, "selector");
+	view_uniform_ = glGetUniformLocation(postProgram, "view");
+	proj_uniform_ = glGetUniformLocation(postProgram, "proj");
+	selector_ = 0;
 
+	glEnable(GL_DEPTH_TEST);
+	
 	std::cout << "Game successfully Initialized!" << std::endl;
 }
 
 void Game::Draw() {
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(mainProgram);
 
 	// SetMatrix: TargetLocation, Count, IsRowMajor, Source
 	Matrix world(1.0f);
-	glUniformMatrix4fv(vpUniform, 1, true, camera.getVP().getMatrix());
+	Matrix vp = camera.getProj() * camera.getView();
+	glUniformMatrix4fv(vpUniform, 1, true, vp.getMatrix());
 	glUniformMatrix4fv(worldUniform, 1, true, world.getMatrix());
 
 	// Draw
@@ -274,14 +296,22 @@ void Game::Draw() {
 }
 
 void Game::PostStage() {
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(postProgram);
 
-	glUniform1i(depth_uniform_, 0);
+	glUniform1i(color_uniform_, 0);
 	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture_);
+
+	glUniform1i(depth_uniform_, 1);
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, depth_texture_);
+
+	glUniform1ui(selector_uniform_, selector_);
+
+	glUniformMatrix4fv(proj_uniform_, 1, true, camera.getProj().getMatrix());
+	glUniformMatrix4fv(view_uniform_, 1, true, camera.getView().getMatrix());
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, quadvbo);
@@ -296,10 +326,9 @@ void Game::PostStage() {
 	// Draw the triangle !
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(0);
-
-	// Swap buffers
-	glfwSwapBuffers(window);
 }
+
+bool keyPressed = false;
 
 void Game::Update(double time) {
 	// Get Movement offset = (key1-key2)*delta_time
@@ -318,6 +347,15 @@ void Game::Update(double time) {
 
 	// Move the camera
 	camera.Move(Vector3(x, y, z), mx, my);
+
+	
+	if (keyPressed == false && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+		keyPressed = true;
+		selector_ = (selector_+1)%4;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE) {
+		keyPressed = false;
+	}
 }
 	
 void Game::Run() {
@@ -329,6 +367,9 @@ void Game::Run() {
 
 		Draw();
 		PostStage();
+
+		// Swap buffers
+		glfwSwapBuffers(window);
 
 		glfwPollEvents();
 	}

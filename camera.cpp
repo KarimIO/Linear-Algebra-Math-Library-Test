@@ -25,13 +25,21 @@ Vector3 Camera::GetForward() {
     return Vector3(cos(angles.X()) * sin(angles.Y()), sin(angles.X()), cos(angles.X()) * cos(angles.Y()));
 }
 
-Matrix Camera::getVP() {
-    Vector3 up = Vector3(0,1,0);
+Matrix Camera::getProj() {
     static float fov = 45.0f;
     static float ratio = 1024.0f / 768.0f;
+    static float near = 0.1f;
+    static float far = 100.0f;
 
-    Matrix projection = perspective(0.1f, 100.0f, fov, ratio);
+    Matrix projection = perspective(near, far, fov, ratio);
+    
+    return projection;
+}
+
+Matrix Camera::getView() {
+    Vector3 up = Vector3(0,1,0);
+
     Matrix viewMat = view(position, position + GetForward(), up);
     
-    return projection * viewMat;
+    return viewMat;
 }

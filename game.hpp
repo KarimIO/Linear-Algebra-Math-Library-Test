@@ -20,6 +20,9 @@ private:
 	
 	GLFWwindow* window;
 	
+	GLuint texture_;
+	GLuint handle;
+
 	GLuint fbo_;
 	GLuint depth_texture_;
 
@@ -33,7 +36,14 @@ private:
 
 	GLuint vpUniform;
 	GLuint worldUniform;
+	GLuint color_uniform_;
 	GLuint depth_uniform_;
+	GLuint selector_uniform_;
+
+	GLuint proj_uniform_;
+	GLuint view_uniform_;
+	
+	unsigned int selector_;
 };
 
 #endif

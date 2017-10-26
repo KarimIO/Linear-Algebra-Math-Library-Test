@@ -7,7 +7,8 @@
 class Camera {
 public:
     Camera();
-    Matrix getVP();
+    Matrix getProj();
+    Matrix getView();
     Vector3 GetForward();
     void Move(Vector3 offset, double mx, double my);
 private:

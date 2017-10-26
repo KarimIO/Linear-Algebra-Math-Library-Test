@@ -7,7 +7,6 @@
 Matrix transpose(const Matrix &m);
 Matrix inverse(const Matrix &m);
 Matrix perspective(float near, float far, float fovX, float fovY);
-Matrix orthographic(float near, float far, float width, float height);
 Matrix view(Vector3 position, Vector3 forward, Vector3 up);
 Matrix world(Vector3 translate, Vector3 rotation, Vector3 scaling);
 Matrix translate(Vector3 a);

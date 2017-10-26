@@ -25,13 +25,6 @@ Matrix perspective(float near, float far, float fov, float ratio) {
                     0, 0, -1.0f, 0);
 }
 
-Matrix orthographic(float near, float far, float width, float height) {
-    return Matrix(  1/width, 0, 0, 0,
-                    0, 1/height, 0, 0,
-                    0, 0, -2 * (far - near), (-far - near)/(far - near),
-                    0, 0, 0, 1);
-}
-
 Matrix view(Vector3 position, Vector3 target, Vector3 upVec) {
     Vector3 forward = normalize(target - position);
     Vector3 right   = normalize(cross(forward, upVec));
