@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "game.hpp"
 
@@ -186,17 +187,68 @@ Game::Game() {
 	printf("OpenGL %s, GLSL %s\n", glGetString(GL_VERSION),
 			glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-	glGenVertexArrays(1, &trivao);
-	glBindVertexArray(trivao);
-	
-	glGenVertexArrays(1, &quadvao);
-	glBindVertexArray(quadvao);
+	objects_.reserve(3);
 
-	const GLfloat triangle[] = {
-		-1.0f, -1.0f, 0.0f,
-		0.0f,  1.0f, 0.0f,
-		1.0f, -1.0f, 0.0f,
+	const Vector3 triangle[] = {
+		Vector3(-1.0f, -1.0f, 0.0f),
+		Vector3(0.0f,  1.0f, 0.0f),
+		Vector3(1.0f, -1.0f, 0.0f)
 	};
+	
+	objects_.push_back(Object(triangle, 3));
+	objects_.push_back(Object(triangle, 3, Vector3(0,0,-2), Vector3(2), Vector3(0)));
+
+	const Vector3 box[] = {
+		// Back
+		Vector3(-1.0f, -1.0f, -1.0f),
+		Vector3(-1.0f,  1.0f, -1.0f),
+		Vector3( 1.0f, -1.0f, -1.0f),
+		Vector3(-1.0f,  1.0f, -1.0f),
+		Vector3( 1.0f, -1.0f, -1.0f),
+		Vector3( 1.0f,  1.0f, -1.0f),
+
+		// Front
+		Vector3(-1.0f, -1.0f, 1.0f),
+		Vector3(-1.0f,  1.0f, 1.0f),
+		Vector3( 1.0f, -1.0f, 1.0f),
+		Vector3(-1.0f,  1.0f, 1.0f),
+		Vector3( 1.0f, -1.0f, 1.0f),
+		Vector3( 1.0f,  1.0f, 1.0f),
+		
+		// Right
+		Vector3(-1.0f, -1.0f, -1.0f),
+		Vector3(-1.0f, -1.0f,  1.0f),
+		Vector3(-1.0f,  1.0f, -1.0f),
+		Vector3(-1.0f, -1.0f,  1.0f),
+		Vector3(-1.0f,  1.0f, -1.0f),
+		Vector3(-1.0f,  1.0f,  1.0f),
+		
+		// Left
+		Vector3( 1.0f, -1.0f, -1.0f),
+		Vector3( 1.0f, -1.0f,  1.0f),
+		Vector3( 1.0f,  1.0f, -1.0f),
+		Vector3( 1.0f, -1.0f,  1.0f),
+		Vector3( 1.0f,  1.0f, -1.0f),
+		Vector3( 1.0f,  1.0f,  1.0f),
+
+		// Bottom
+		Vector3(-1.0f, -1.0f, -1.0f),
+		Vector3(-1.0f, -1.0f,  1.0f),
+		Vector3( 1.0f, -1.0f, -1.0f),
+		Vector3(-1.0f, -1.0f,  1.0f),
+		Vector3( 1.0f, -1.0f, -1.0f),
+		Vector3( 1.0f, -1.0f,  1.0f),
+
+		// Top
+		Vector3(-1.0f, 1.0f, -1.0f),
+		Vector3(-1.0f, 1.0f,  1.0f),
+		Vector3( 1.0f, 1.0f, -1.0f),
+		Vector3(-1.0f, 1.0f,  1.0f),
+		Vector3( 1.0f, 1.0f, -1.0f),
+		Vector3( 1.0f, 1.0f,  1.0f)
+	};
+
+	objects_.push_back(Object(box, sizeof(box)/sizeof(box[0]), Vector3(0), Vector3(8)));
 
 	const GLfloat quads[] = {
 		-1.0f, -1.0f,
@@ -204,14 +256,22 @@ Game::Game() {
 		 1.0f, -1.0f,
 		 1.0f,  1.0f
 	};
-	
-	glGenBuffers(1, &trivbo);
-	glBindBuffer(GL_ARRAY_BUFFER, trivbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), triangle, GL_STATIC_DRAW);
 
+	glGenVertexArrays(1, &quadvao);
+	glBindVertexArray(quadvao);
 	glGenBuffers(1, &quadvbo);
 	glBindBuffer(GL_ARRAY_BUFFER, quadvbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quads), quads, GL_STATIC_DRAW);
+	glVertexAttribPointer(
+	   0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+	   2,                  // size
+	   GL_FLOAT,           // type
+	   GL_FALSE,           // normalized?
+	   0,                  // stride
+	   (void*)0            // array buffer offset
+	);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
 		
 	glGenFramebuffers(1, &fbo_);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
@@ -277,22 +337,10 @@ void Game::Draw() {
 	Matrix world(1.0f);
 	Matrix vp = camera.getProj() * camera.getView();
 	glUniformMatrix4fv(vpUniform, 1, true, vp.getMatrix());
-	glUniformMatrix4fv(worldUniform, 1, true, world.getMatrix());
-
-	// Draw
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, trivbo);
-	glVertexAttribPointer(
-	   0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-	   3,                  // size
-	   GL_FLOAT,           // type
-	   GL_FALSE,           // normalized?
-	   0,                  // stride
-	   (void*)0            // array buffer offset
-	);
-	// Draw the triangle !
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-	glDisableVertexAttribArray(0);
+	
+	for (Object &o : objects_) {
+		o.Draw(worldUniform);
+	}
 }
 
 void Game::PostStage() {
@@ -313,19 +361,9 @@ void Game::PostStage() {
 	glUniformMatrix4fv(proj_uniform_, 1, true, camera.getProj().getMatrix());
 	glUniformMatrix4fv(view_uniform_, 1, true, camera.getView().getMatrix());
 
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, quadvbo);
-	glVertexAttribPointer(
-	   0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-	   2,                  // size
-	   GL_FLOAT,           // type
-	   GL_FALSE,           // normalized?
-	   0,                  // stride
-	   (void*)0            // array buffer offset
-	);
-	// Draw the triangle !
+	glBindVertexArray(quadvao);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDisableVertexAttribArray(0);
+	glBindVertexArray(0);
 }
 
 bool keyPressed = false;
@@ -348,6 +386,8 @@ void Game::Update(double time) {
 	// Move the camera
 	camera.Move(Vector3(x, y, z), mx, my);
 
+	objects_[0].SetPosition(0, sin(glfwGetTime()) * 4, 4);
+	objects_[1].SetScale(Vector3(cos(glfwGetTime()) * 2, sin(glfwGetTime()) * 2, 1));
 	
 	if (keyPressed == false && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
 		keyPressed = true;

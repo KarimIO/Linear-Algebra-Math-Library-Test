@@ -5,6 +5,8 @@
 #include <GLFW/glfw3.h>
 
 #include "camera.hpp"
+#include "object.hpp"
+#include <vector>
 
 class Game {
 public:
@@ -26,9 +28,9 @@ private:
 	GLuint fbo_;
 	GLuint depth_texture_;
 
-	GLuint trivao;
+	std::vector<Object> objects_;
+
 	GLuint quadvao;
-	GLuint trivbo;
 	GLuint quadvbo;
 
 	GLuint mainProgram;

@@ -23,7 +23,7 @@ vec4 ViewPosFromDepth(float depth) {
 vec4 ViewPosFromDepth2(float depth) {
 	float near = 0.1;
   float far = 100;
-  float ProjectionA = (far + near) / (far - near);
+  float ProjectionA = (far) / (far - near);
   float ProjectionB = (far * near) / (far - near);
   float linearDepth = ProjectionB / ((depth - ProjectionA));
   vec4 position = vec4(viewRay * linearDepth, 1.0);
@@ -44,19 +44,24 @@ vec3 WorldPosFromDepth2(float depth) {
     return WorldPosFromViewPos(ViewPosFromDepth2(depth));
 }
 
+// Make the Pos Range to [0, 1]
+vec3 CleanPosRange(vec3 i) {
+    return i/16.0f+vec3(0.5);
+}
+
 void main() {
   float depth = texture(depthTex, UV).r;
   if (selector == uint(0)) {
-    color = texture(colorTex, UV).rgb;
+    color = CleanPosRange(texture(colorTex, UV).rgb);
   }
   else if (selector == uint(1)) {
     color = vec3(depth);
   }
   else if (selector == uint(2)) {
-    color = (depth == 1) ? vec3(0.66,0.33,0.99) : WorldPosFromDepth(depth).xyz;
+    color = (depth == 1) ? vec3(0.66,0.33,0.99) : CleanPosRange(WorldPosFromDepth(depth).xyz);
   }
   else {
-    color = (depth == 1) ? vec3(0.99,0.66,0.33) : WorldPosFromDepth2(depth).xyz;
+    color = (depth == 1) ? vec3(0.99,0.66,0.33) : CleanPosRange(WorldPosFromDepth2(depth).xyz);
   }
 }
 

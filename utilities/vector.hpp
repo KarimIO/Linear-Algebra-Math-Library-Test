@@ -4,6 +4,7 @@
 class Vector {
 public:
     Vector() : vector_{0,0,0,0} {};
+    Vector(float xyzw) : vector_{xyzw,xyzw,xyzw,xyzw} {};
     Vector(float x, float y, float z, float w) : vector_{x,y,z,w} {};
     Vector operator-(const Vector &in) const {
         return Vector(
@@ -30,6 +31,7 @@ private:
 class Vector3 {
 public:
     Vector3() : vector_{0,0,0} {};
+    Vector3(float xyz) : vector_{xyz,xyz,xyz} {};
     Vector3(float x, float y, float z) : vector_{x,y,z} {};
     Vector3 operator-(const Vector3 &in) const {
         return Vector3(vector_[0] - in.X(),
