@@ -51,8 +51,14 @@ Matrix translate(Vector3 a) {
                     0, 0, 0, 1);
 }
 
-Matrix rotate(Vector3 amount) {
-    return Matrix();
+Matrix rotate(Vector3 angles) {
+    Vector3 zRot   = Vector3(cos(angles.X()) * sin(angles.Y()), sin(angles.X()), cos(angles.X()) * cos(angles.Y()));
+    Vector3 xRot   = normalize(cross(zRot, Vector3(0,1,0)));
+    Vector3 yRot   = cross(xRot, zRot);
+    return Matrix(	xRot.X(), xRot.Y(), xRot.Z(), 0,
+            yRot.X(), yRot.Y(), yRot.Z(), 0,
+            zRot.X(), zRot.Y(), zRot.Z(), 0,
+            0, 0, 0, 1);
 }
 
 Matrix scale(Vector3 a) {

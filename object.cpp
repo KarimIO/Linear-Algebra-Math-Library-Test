@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "utilities/transform.hpp"
+#include "utilities/quat.hpp"
 
 Object::Object() {
 
@@ -94,7 +95,7 @@ Matrix Object::GetWorldMatrix() {
 }
 
 void Object::GenerateWorldMatrix() {
-    world_ = translate(position_) * rotate(angles_) * scale(scale_);
+    world_ = translate(position_) * Quaternion(angles_) * scale(scale_);
     should_update_world_ = false;
 }
 

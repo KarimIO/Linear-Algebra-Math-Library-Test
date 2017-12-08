@@ -187,7 +187,7 @@ Game::Game() {
 	printf("OpenGL %s, GLSL %s\n", glGetString(GL_VERSION),
 			glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-	objects_.reserve(3);
+	objects_.reserve(4);
 
 	const Vector3 triangle[] = {
 		Vector3(-1.0f, -1.0f, 0.0f),
@@ -197,6 +197,7 @@ Game::Game() {
 	
 	objects_.push_back(Object(triangle, 3));
 	objects_.push_back(Object(triangle, 3, Vector3(0,0,-2), Vector3(2), Vector3(0)));
+	objects_.push_back(Object(triangle, 3, Vector3(0,0,2), Vector3(3), Vector3(0)));
 
 	const Vector3 box[] = {
 		// Back
@@ -386,8 +387,10 @@ void Game::Update(double time) {
 	// Move the camera
 	camera.Move(Vector3(x, y, z), mx, my);
 
-	objects_[0].SetPosition(0, sin(glfwGetTime()) * 4, 4);
-	objects_[1].SetScale(Vector3(cos(glfwGetTime()) * 2, sin(glfwGetTime()) * 2, 1));
+	float t = glfwGetTime();
+	objects_[0].SetPosition(0, sin(t) * 4, 4);
+	objects_[1].SetScale(Vector3(cos(t) * 2, sin(t) * 2, 1));
+	objects_[2].SetAngles(Vector3(t, t, t));
 	
 	if (keyPressed == false && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
 		keyPressed = true;
